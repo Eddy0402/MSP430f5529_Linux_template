@@ -1,0 +1,7 @@
+msp430f5529.hex
+msp430f5529.out
+
+*.o
+Firmware Output.txt
+
+*.swp

@@ -1,0 +1,45 @@
+#include "msp430.h"                     ; #define controlled include file
+
+        NAME    main                    ; module name
+
+        PUBLIC  main                    ; make the main label vissible
+                                        ; outside this module
+        ORG     0FFFEh
+        DC16    init                    ; set reset vector to 'init' label
+
+        RSEG    CSTACK                  ; pre-declaration of segment
+        RSEG    CODE                    ; place program in 'CODE' segment
+
+init:   MOV     #SFE(CSTACK), SP        ; set up stack
+
+main:   NOP                             ; main program
+        MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
+        
+        //P2.1 for button, P1.0 for led
+        BIS.B #00000010b, &P2REN
+        BIS.B #00000010b, &P2OUT
+        BIS.B #00000001b, &P1DIR
+        BIC.B #00000001b, &P1OUT
+        
+        MOV   #11111111b, R4           ; button state 
+        MOV   #0x0, R5           ; debounce counter
+polling:
+        CMP.B R4, &P2IN          ; test button state
+        JEQ reset_counter
+state_change:
+        INC.W R5
+        CMP.W R5, 0x40           ; if state changed for enough time, toggle led
+        JL    polling
+        
+        // button state changed
+        CMP.B #11111101b, &P2IN
+        JNE not_falling_edge
+        XOR.B #00000001b, &P1OUT ; toggle led
+not_falling_edge:
+        XOR.B #00000010b, R4     ; record button state
+reset_counter:
+        MOV   #0x0, R5
+        JMP polling
+
+        NOP                                        
+        END
