@@ -23,9 +23,9 @@
 static void __attribute__((naked, section(".crt_0042"), used))
 disable_watchdog (void)
 {
-  WDTCTL = WDTPW | WDTHOLD;
-}
+    __asm__("MOV.W	#23168, &0x015C");
 
+}
 
 int main(void) {
 	WDTCTL = WDTPW | WDTHOLD;	// Stop watchdog timer // See function above
@@ -37,6 +37,7 @@ int main(void) {
 		//P1OUT ^= 0x01;				// Toggle P1.0 using exclusive-OR
 
 		i = 65535;					// SW Delay
+
 		do i--;
 		while(i != 0);
 	}
