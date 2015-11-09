@@ -2,39 +2,47 @@ MAKDIR = mk
 MAK = $(wildcard $(MAKDIR)/*.mk)
 include $(MAK)
 
-GCC_DIR =  ~/ti/gcc/bin
-SUPPORT_FILE_DIRECTORY = ~/ti/gcc/include/
-CC             = $(GCC_DIR)/msp430-elf-gcc
-OBJCOPY        = $(GCC_DIR)/msp430-elf-objcopy
-GDB            = $(GCC_DIR)/msp430-elf-gdb
-GDB_SERVER     = $(GCC_DIR)/gdb_agent_console
-GDB_SERVER_DAT = $(GCC_DIR)/../msp430.dat
-# absolute path because of running root
-FLASH_LIBDIR = /home/eddy/ti/MSP430Flasher_1.3.7
-FLASH        = /home/eddy/ti/MSP430Flasher_1.3.7/MSP430Flasher
-
-DEVICE       = msp430f5529
-
 ELFOUT=$(DEVICE).out
 FIRMWARE=$(DEVICE).hex
+OUTDIR=build
 
 INCLUDE_DIR += \
-			   include
-OBJECTS += \
-		   main.o
+    include
+
+SRCDIR += \
+    src \
+
+SRC += \
+    $(wildcard $(addsuffix /*.c,$(SRCDIR))) \
+    $(wildcard $(addsuffix /*.s,$(SRCDIR))) \
 
 INCLUDES = $(addprefix -I,$(INCLUDE_DIR))
+OBJS := $(addprefix $(OUTDIR)/,$(patsubst %.s,%.o,$(SRC:.c=.o)))
+DEPENDS = $(addsuffix .d,$(OBJS))
 
 CFLAGS = -I $(SUPPORT_FILE_DIRECTORY) $(INCLUDES) -mmcu=$(DEVICE) -O2 -g
 LFLAGS = -L $(SUPPORT_FILE_DIRECTORY) -T $(DEVICE).ld
 
 all: $(FIRMWARE)
 
-$(FIRMWARE): $(ELFOUT)
-	$(OBJCOPY) -Oihex $? $@
+$(OUTDIR)/%.o: %.s
+	@mkdir -p $(dir $@)
+	@echo " CC      "$@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(ELFOUT): ${OBJECTS}
-	$(CC) $(CFLAGS) $(LFLAGS) $? -o $@
+$(OUTDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	@echo " CC      "$@
+	@$(CC) $(CFLAGS) -MMD -MF $@.d -c $< -o $@
+
+
+$(FIRMWARE): $(ELFOUT)
+	@echo " OBJCOPY " $? $@
+	@$(OBJCOPY) -Oihex $? $@
+
+$(ELFOUT): ${OBJS}
+	@echo " LD      "$@
+	@$(CC) $(CFLAGS) $(LFLAGS) $? -o $@
 
 debug: all
 	$(GDB_SERVER) $(GDB_SERVER_DAT) &
@@ -45,4 +53,8 @@ flash:
 	LD_LIBRARY_PATH=$(FLASH_LIBDIR) $(FLASH) -r [Firmware Output.txt,MAIN]
 
 clean:
-	rm -rf $(OBJECTS) $(FIRMWARE) $(ELFOUT)
+	rm -rf $(OBJS) $(FIRMWARE) $(ELFOUT)
+
+.PHONY: all clean flash debug
+
+-include $(DEPENDS)
