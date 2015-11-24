@@ -92,6 +92,7 @@ extern "C" {
 #define portSHORT		int
 #define portSTACK_TYPE	uint16_t
 #define portBASE_TYPE	short
+#define portPOINTER_SIZE_TYPE uint16_t
 
 typedef portSTACK_TYPE StackType_t;
 typedef short BaseType_t;
