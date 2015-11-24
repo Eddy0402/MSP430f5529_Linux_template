@@ -17,7 +17,7 @@ SRC += \
     $(wildcard $(addsuffix /*.s,$(SRCDIR))) \
 
 INCLUDES = $(addprefix -I,$(INCLUDE_DIR))
-OBJS := $(addprefix $(OUTDIR)/,$(patsubst %.s,%.o,$(SRC:.c=.o)))
+OBJS := $(addprefix $(OUTDIR)/,$(patsubst %.S, %.o, $(patsubst %.s, %.o, $(patsubst %.c, %.o, $(SRC)))))
 DEPENDS = $(addsuffix .d,$(OBJS))
 
 CFLAGS = -I $(SUPPORT_FILE_DIRECTORY) $(INCLUDES) -mmcu=$(DEVICE) -O2 -g
@@ -35,14 +35,13 @@ $(OUTDIR)/%.o: %.c
 	@echo " CC      "$@
 	@$(CC) $(CFLAGS) -MMD -MF $@.d -c $< -o $@
 
-
 $(FIRMWARE): $(ELFOUT)
 	@echo " OBJCOPY " $? $@
 	@$(OBJCOPY) -Oihex $? $@
 
-$(ELFOUT): ${OBJS}
-	@echo " LD      "$@
-	@$(CC) $(CFLAGS) $(LFLAGS) $? -o $@
+$(ELFOUT): $(OBJS)
+	@echo " LD      " $@
+	@$(CC) $(CFLAGS) $(LFLAGS) $^ -o $@
 
 debug: all
 	$(GDB_SERVER) $(GDB_SERVER_DAT) &

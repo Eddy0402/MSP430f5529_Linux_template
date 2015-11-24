@@ -1,5 +1,6 @@
 msp430f5529.hex
 msp430f5529.out
+build
 
 *.o
 Firmware Output.txt
